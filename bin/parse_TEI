@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+
+import os
+import argparse
+
+from pathlib import Path
+
+from articlenizer import tei_parser
+from articlenizer.util import str2bool
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = "Transform TEI Software annotation in BRAT annotation.")
+    parser.add_argument("--in-file", required=True, help="Input file.")
+    parser.add_argument("--out-path", required=True, help="Path to output folder (will be created if it does not exist).")
+    parser.add_argument("--write-empty", default=True, type=str2bool, help="Whether to write empty files.")
+    args = parser.parse_args()
+
+    args.in_file = args.in_file.rstrip('/')
+    args.out_path = args.out_path.rstrip('/')
+
+    if not os.path.isfile(args.in_file):
+        raise(RuntimeError("Input file does not exist"))
+    in_file = Path(args.in_file)
+    print("Setting up output paths")
+    if not os.path.isdir(args.out_path):
+        os.mkdir(args.out_path)
+
+    print("Starting on file {}".format(args.in_file))
+    tei_parser.parse(in_file, Path(args.out_path), write_empty=args.write_empty))
+ 

@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+import os
+import argparse
+
+from pathlib import Path
+
+from articlenizer import articlenizer
+from articlenizer.util import str2bool
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = "Preprocess files with articlenizer.")
+    parser.add_argument("--in-path", required=True, help="Path to input dir.")
+    parser.add_argument("--out-path", required=True, help="Path to output folder (will be created if it does not exist).")
+    parser.add_argument("--ncores", default=None, help="Number of cores for parallel execution. Single core is used if not provided.")
+    parser.add_argument("--process-unicode", default=True, type=str2bool, help="Replace/Adjust unicode characters")
+    parser.add_argument("--replace-math", default=True, type=str2bool, help="Replace math equations with a fixed token")
+    parser.add_argument("--correct", default=True, type=str2bool, help="Correct errors in the text.")
+    parser.add_argument("--corr-citations", default=True, type=str2bool, help="Correct citation errors.")
+    args = parser.parse_args()
+
+    args.in_path = args.in_path.rstrip('/')
+    args.out_path = args.out_path.rstrip('/')
+
+    if not os.path.isdir(args.in_path):
+        raise(RuntimeError("Input path does not exist"))
+    if not os.path.isdir(args.out_path):
+        os.mkdir(args.out_path)
+
+    print("Loading files")
+    all_files = list(Path(args.in_path).rglob('*.txt'))
+    all_files = [[p, Path(str(p).replace(args.in_path, args.out_path)).with_suffix('.prepro.txt')] for p in all_files]
+    print("Setting up output paths")
+    subpaths = set([str(p).rsplit('/', 1)[0] for _, p in all_files])
+    for p in subpaths:
+        if not os.path.isdir(p):
+            os.makedirs(p)
+
+    if args.ncores is None:
+        print("Preprocessing {} articles on a single core".format(len(all_files)))
+        errors = articlenizer.preprocess_articles(all_files, args.process_unicode, args.replace_math, args.correct, args.corr_citations)
+    else:
+        n_cores = int(args.ncores)
+        print("Preprocessing {} articles on {} cores".format(len(all_files), n_cores))
+        errors = articlenizer.preprocess_articles_parallel_wrapper(all_files, int(args.ncores), args.process_unicode, args.replace_math, args.correct, args.corr_citations)
+
+ 

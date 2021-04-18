@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+
+import os
+import argparse
+
+from pathlib import Path
+
+from articlenizer import formatting
+from articlenizer.util import str2bool
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = "Transform BRAT annotation to BIO format.")
+    parser.add_argument("--in-path", required=True, help="Path to input dir.")
+    parser.add_argument("--out-path", required=True, help="Path to output folder (will be created if it does not exist).")
+    parser.add_argument("--data-ext", default='.data.txt', help="Extension to recognize text data files.")
+    parser.add_argument("--label-ext", default='.labels.txt', help="Extension to recognize bio label files.")
+    parser.add_argument("--ncores", default=None, help="Number of cores for parallel execution. Single core is used if not provided.")
+    args = parser.parse_args()
+
+    args.in_path = args.in_path.rstrip('/')
+    args.out_path = args.out_path.rstrip('/')
+
+    if not os.path.isdir(args.in_path):
+        raise(RuntimeError("Input path does not exist"))
+    if not os.path.isdir(args.out_path):
+        os.mkdir(args.out_path)
+
+    print("Loading files")
+    all_txt_files = list(Path(args.in_path).rglob('*{}'.format(args.data_ext)))
+    all_label_files = list(Path(args.in_path).rglob('*{}'.format(args.label_ext)))
+
+    plain_txt_names = set([str(p).split(args.data_ext)[0] for p in all_txt_files])
+    plain_label_names = set([str(p).split(args.label_ext)[0] for p in all_label_files])
+    only_txt_names = plain_txt_names - plain_label_names
+    only_label_names = plain_label_names - plain_txt_names
+    if only_txt_names:
+        print(RuntimeWarning("The following text files have no bio file: {}".format([str(p) for p in only_txt_names])))
+    if only_label_names:
+        print(RuntimeWarning("The following bio files have no text file: {}".format([str(p) for p in only_label_names])))
+
+    all_files = plain_txt_names & plain_label_names
+    all_files = [{'data': Path(p + args.data_ext), 'label': Path(p + args.label_ext), 'txt': Path(p.replace(args.in_path, args.out_path) + '.txt'), 'ann': Path(p.replace(args.in_path, args.out_path) + '.ann')} for p in all_files]
+
+    print("Setting up output paths")
+    subpaths = set([str(p['txt']).rsplit('/', 1)[0] for p in all_files])
+    for p in subpaths:
+        if not os.path.isdir(p):
+            os.makedirs(p)
+
+    print("NOTE: Currently BIO to BRAT conversion does only handle entities. Relations are not included yet.")
+
+    all_files = all_files[:1]
+
+    if args.ncores is None:
+        print("Transforming {} articles on a single core".format(len(all_files)))
+        formatting.article_list_bio_to_brat(all_files)
+    else:
+        n_cores = int(args.ncores)
+        print("Transforming {} articles on {} cores".format(len(all_files), n_cores))
+        formatting.bio_to_brat_parallel_wrapper(all_files, n_cores)
+ 

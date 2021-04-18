@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+
+import os
+import argparse
+
+from pathlib import Path
+
+from articlenizer import jats_parser
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = "Transform JATS XML articles into plain text.")
+    parser.add_argument("--in-path", required=True, help="Path to input dir.")
+    parser.add_argument("--out-path", required=True, help="Path to output folder (will be created if it does not exist).")
+    parser.add_argument("--ncores", default=None, help="Number of cores for parallel execution. Single core is used if not provided.")
+    args = parser.parse_args()
+
+    args.in_path = args.in_path.rstrip('/')
+    args.out_path = args.out_path.rstrip('/')
+
+    if not os.path.isdir(args.in_path):
+        raise(RuntimeError("Input path does not exist"))
+    if not os.path.isdir(args.out_path):
+        os.mkdir(args.out_path)
+
+    print("Loading files")
+    all_files = list(Path(args.in_path).rglob('*.nxml'))
+    all_files = [[p, Path(str(p).replace(args.in_path, args.out_path)).with_suffix('.txt')] for p in all_files]
+    print("Setting up output paths")
+    subpaths = [str(p).rsplit('/', 1)[0] for _, p in all_files]
+    for p in subpaths:
+        if not os.path.isdir(p):
+            os.makedirs(p)
+
+    if args.ncores is None:
+        print("Parsing {} articles on a single core".format(len(all_files)))
+        errors = jats_parser.parse_article_list(all_files)
+    else:
+        n_cores = int(args.ncores)
+        print("Parsing {} articles on {} cores".format(len(all_files), n_cores))
+        errors = jats_parser.parse_article_list_parallel_wrapper(all_files, n_cores)
+    print("{} out of the {} articles were not written in English.".format(errors, len(all_files)))
+ 

@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+
+import os
+import argparse
+
+from pathlib import Path
+
+from articlenizer import analyses
+from articlenizer.util import str2bool
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = "Analyze corpus of BRAT files.")
+    parser.add_argument("--in-paths", required=True, nargs='+', help="Path to input dir.")
+    parser.add_argument("--text", default=True, type=str2bool, help="Whether to analyze text.")
+    parser.add_argument("--anno", default=True, type=str2bool, help="Whether to analyze annotation.")  
+    parser.add_argument("--print-longest", default=6, help="Print annotations longer than n tokens.") 
+    args = parser.parse_args()
+
+    overall_txt_files = []
+    overall_ann_files = []
+    for path_in in args.in_paths:
+        path = path_in.rstrip('/')
+        if not os.path.isdir(path):
+            raise(RuntimeError("Input path does not exist"))
+        text = args.text
+        anno = args.anno
+
+        print("Loading files\n")
+        if text:
+            all_txt_files = list(Path(path).rglob('*.txt'))
+            overall_txt_files.extend(all_txt_files)
+        else:
+            all_txt_files = None
+
+        if anno: 
+            all_ann_files = list(Path(path).rglob('*.ann'))
+            overall_ann_files.extend(all_ann_files)
+        else:
+            all_ann_files = None
+        
+    print("Analyzing articles\n")
+    analyses.analyze_corpus(overall_txt_files, overall_ann_files, int(args.print_longest))
+ 

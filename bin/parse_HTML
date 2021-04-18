@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+
+import os
+import argparse
+
+from pathlib import Path
+
+from articlenizer import html_parser
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = "Transform XML tagged articles into plain text.")
+    parser.add_argument("--in-path", required=True, help="Path to input dir.")
+    parser.add_argument("--out-path", required=True, help="Path to output folder (will be created if it does not exist).")
+    parser.add_argument("--ncores", default=None, help="Number of cores for parallel execution. Single core is used if not provided.")
+    args = parser.parse_args()
+
+    args.in_path = args.in_path.rstrip('/')
+    args.out_path = args.out_path.rstrip('/')
+
+    if not os.path.isdir(args.in_path):
+        raise(RuntimeError("Input path does not exist"))
+    if not os.path.isdir(args.out_path):
+        os.mkdir(args.out_path)
+
+    print("Loading files")
+    all_files = list(Path(args.in_path).rglob('*.html'))
+
+    if args.ncores is None:
+        print("Parsing {} XML inputs on a single core".format(len(all_files)))
+        n_articles = html_parser.parse_file_list(all_files, args.out_path)
+    else:
+        n_cores = int(args.ncores)
+        print("Parsing {} XML inputs on {} cores".format(len(all_files), n_cores))
+        n_articles = html_parser.parse_file_list_parallel_wrapper(all_files, args.out_path, n_cores)
+    print("{} article samples were generated from the {} XML inputs.".format(n_articles, len(all_files)))
+    
