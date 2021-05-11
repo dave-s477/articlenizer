@@ -57,13 +57,10 @@ class JATS_Parser(xml.sax.handler.ContentHandler):
 
         self.catch_id = ''
         if name in IDS:
-            if attrs['pub-id-type']:
+            if 'pub-id-type' in attrs:
                 self.catch_id = attrs['pub-id-type']
             else:
-                print("Found ID without pub-id-type")
-                print(name)
-                print(attrs.items())
-                print()
+                print("Found ID without pub-id-type: {}".format(name))
 
         if name in START_TAG:
             self.started = True
