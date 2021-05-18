@@ -338,7 +338,7 @@ def brat_to_bio(text, annotation, process_unicode=True, replace_math=True, corre
     
     return sentences
 
-def sentence_based_info(text, annotation, process_unicode=True, replace_math=True, correct=True, corr_cite=True):
+def sentence_based_info(text, annotation, process_unicode=True, replace_math=True, correct=True, corr_cite=True, is_preprocessed=False):
     """Transform a document annotated in BRAT format into a sentence based BIO format that also considers relations. 
 
     Args:
@@ -370,12 +370,13 @@ def sentence_based_info(text, annotation, process_unicode=True, replace_math=Tru
         _switch_characters(annotation_dict, switched_segments)
         _adjust_strings(annotation_dict, text)
 
-    text, replacements = sentenize.normalize(text)
-    _replace_segments(annotation_dict, replacements)
-    _adjust_strings(annotation_dict, text)
-    text, replacements = sentenize.sentenize_with_index(text)
-    _add_characters(annotation_dict, replacements)
-    _adjust_strings(annotation_dict, text)
+    if not is_preprocessed:
+        text, replacements = sentenize.normalize(text)
+        _replace_segments(annotation_dict, replacements)
+        _adjust_strings(annotation_dict, text)
+        text, replacements = sentenize.sentenize_with_index(text)
+        _add_characters(annotation_dict, replacements)
+        _adjust_strings(annotation_dict, text)
 
     sentences = []
     sentence_match_objects = re.finditer(r'[^\n]+', text)
