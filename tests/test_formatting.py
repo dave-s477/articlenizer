@@ -21,7 +21,7 @@ R3	developer_of Arg1:T4 Arg2:T1
 def test_bio_to_brat():
     text = 'Choroidal segmentation and thickness analyses were performed automatically with custom MATLAB ( MATLAB 2017b , The MathWorks , Inc . , Natick , MA , USA ) software for choroid segmentation [21] .'
     labels = 'O O O O O O O O O O B-pl_usage O B-pl_usage B-release O B-developer I-developer I-developer I-developer I-developer O O O O O O O O O O O O O'
-    entities, _ = formatting.bio_to_brat(text, labels, split_sent=True)
+    entities, _, _ = formatting.bio_to_brat(text, labels, split_sent=True)
     assert len(entities) == 4 and entities[0]['beg'] == 87 and entities[0]['end'] == 93 and entities[1]['beg'] == 96 and entities[1]['end'] == 102
 
 def test_relations():

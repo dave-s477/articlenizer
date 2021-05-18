@@ -6,7 +6,6 @@ import argparse
 from pathlib import Path
 
 from articlenizer import formatting
-from articlenizer.util import str2bool
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = "Transform BRAT annotation to BIO format.")
@@ -14,6 +13,7 @@ if __name__ == "__main__":
     parser.add_argument("--out-path", required=True, help="Path to output folder (will be created if it does not exist).")
     parser.add_argument("--data-ext", default='.data.txt', help="Extension to recognize text data files.")
     parser.add_argument("--label-ext", default='.labels.txt', help="Extension to recognize bio label files.")
+    parser.add_argument("--relation-ext", default='.relations.txt', help="Extension to recognize relation data files.")
     parser.add_argument("--ncores", default=None, help="Number of cores for parallel execution. Single core is used if not provided.")
     args = parser.parse_args()
 
@@ -38,8 +38,14 @@ if __name__ == "__main__":
     if only_label_names:
         print(RuntimeWarning("The following bio files have no text file: {}".format([str(p) for p in only_label_names])))
 
-    all_files = plain_txt_names & plain_label_names
-    all_files = [{'data': Path(p + args.data_ext), 'label': Path(p + args.label_ext), 'txt': Path(p.replace(args.in_path, args.out_path) + '.txt'), 'ann': Path(p.replace(args.in_path, args.out_path) + '.ann')} for p in all_files]
+    if not args.relation_ext:
+        all_files = plain_txt_names & plain_label_names
+        all_files = [{'data': Path(p + args.data_ext), 'label': Path(p + args.label_ext), 'txt': Path(p.replace(args.in_path, args.out_path) + '.txt'), 'ann': Path(p.replace(args.in_path, args.out_path) + '.ann')} for p in all_files]
+    else:
+        all_relation_files = list(Path(args.in_path).rglob('*{}'.format(args.relation_ext)))
+        plain_relation_names = set([str(p).split(args.relation_ext)[0] for p in all_relation_files])
+        all_files = plain_txt_names & plain_label_names & plain_relation_names
+        all_files = [{'data': Path(p + args.data_ext), 'label': Path(p + args.label_ext), 'relation': Path(p + args.relation_ext), 'txt': Path(p.replace(args.in_path, args.out_path) + '.txt'), 'ann': Path(p.replace(args.in_path, args.out_path) + '.ann')} for p in all_files]
 
     print("Setting up output paths")
     subpaths = set([str(p['txt']).rsplit('/', 1)[0] for p in all_files])
@@ -48,8 +54,6 @@ if __name__ == "__main__":
             os.makedirs(p)
 
     print("NOTE: Currently BIO to BRAT conversion does only handle entities. Relations are not included yet.")
-
-    all_files = all_files[:1]
 
     if args.ncores is None:
         print("Transforming {} articles on a single core".format(len(all_files)))

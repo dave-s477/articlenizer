@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 from functools import partial
 from multiprocessing import Pool
+from itertools import zip_longest
 
 from articlenizer import articlenizer, encode_string, corrections, sentenize, util
 from articlenizer.util import chunk_list
@@ -447,7 +448,7 @@ def brat_to_bio_parallel_wrapper(file_names, n_cores, process_unicode=True, repl
     with Pool(n_cores) as p:
         p.map(fct_to_execute, list_segments)
 
-def bio_to_brat(text, label, split_sent=True, split_words=True):
+def bio_to_brat(text, label, relation='', split_sent=True, split_words=True):
     """Transform bio annotated tex to BRAT annotation format
 
     Args:
@@ -460,14 +461,17 @@ def bio_to_brat(text, label, split_sent=True, split_words=True):
         dictionary: annotation 
         string: modified input text
     """
-    entities = []
+    art_entities = []
     offset = 0
     in_entity = False
     text_out = ''
+    relations = []
     if split_sent:
         text = text.split('\n')
         label = label.split('\n')
-    for sentence, sentence_bio in zip(text, label):
+        relation = relation.split('\n')
+    for sentence, sentence_bio, rel in zip_longest(text, label, relation, fillvalue=''):
+        entities = []
         if split_words:
             sentence = sentence.rstrip().split()
             sentence_bio = sentence_bio.rstrip().split()
@@ -481,7 +485,7 @@ def bio_to_brat(text, label, split_sent=True, split_words=True):
                 tag_prefix = tag[:1]
                 ent_type = tag[2:]
                 if not in_entity or tag_prefix in ['B', 'S'] or ( entities and entities[-1]['type'] != ent_type ):
-                    ent_id = 'T{}'.format(len(entities) + 1)
+                    ent_id = 'T{}'.format(len(entities) + len(art_entities) + 1)
                     entities.append({
                         'id': ent_id,
                         'type': ent_type,
@@ -497,7 +501,19 @@ def bio_to_brat(text, label, split_sent=True, split_words=True):
                 in_entity = False
             offset += len(word) + 1
         text_out = text_out.rstrip() + '\n'
-    return entities, text_out
+        art_entities.extend(entities)
+        for r in rel.split(';;'):
+            if r.rstrip():
+                rel_id = 'R{}'.format(len(relations) + 1)
+                rel_info = r.split('\t')
+                relations.append({
+                    'id': rel_id,
+                    'type': rel_info[0],
+                    'Arg1': entities[int(rel_info[3])]['id'],
+                    'Arg2': entities[int(rel_info[6])]['id']
+                })
+        
+    return art_entities, relations, text_out
 
 def write_bio_to_brat(file_names):
     """Read a BIO input file, transform it to BRAT format and write separate outputs for text, and BRAT annotation
@@ -508,12 +524,19 @@ def write_bio_to_brat(file_names):
     with file_names['data'].open(mode='r') as t_file, file_names['label'].open(mode='r') as l_file:
         article_text = t_file.read()
         article_label = l_file.read()
-        annotations, text = bio_to_brat(article_text, article_label)
+        if 'relation' in file_names:
+            with file_names['relation'].open(mode='r') as r_file:
+                article_relation = r_file.read()
+            annotations, relations, text = bio_to_brat(article_text, article_label, relation=article_relation)
+        else:
+            annotations, relations, text = bio_to_brat(article_text, article_label)
 
     with file_names['txt'].open(mode='w') as out_txt, file_names['ann'].open(mode='w') as out_ann:
         out_txt.write(text)
         for anno in annotations:
             out_ann.write('{}\t{} {} {}\t{}\n'.format(anno['id'], anno['type'], anno['beg'], anno['end'], anno['string']))
+        for rel in relations:
+            out_ann.write('{}\t{} Arg1:{} Arg2:{}\t\n'.format(rel['id'], rel['type'], rel['Arg1'], rel['Arg2']))
 
 def article_list_bio_to_brat(file_names):
     """Read a list of BIO input files, transform them to BRAT format and write separate outputs for text, and BRAT annotation
