@@ -354,7 +354,7 @@ def sentence_based_info(text, annotation, process_unicode=True, replace_math=Tru
     """
 
     annotation_dict = annotation_to_dict(annotation)
-    return sentence_based_info(text, annotation_dict, process_unicode, replace_math, correct, corr_cite, is_preprocessed) 
+    return sentence_based_info_annotation_dict(text, annotation_dict, process_unicode, replace_math, correct, corr_cite, is_preprocessed) 
 
 def sentence_based_info_annotation_dict(text, annotation_dict, process_unicode=True, replace_math=True, correct=True, corr_cite=True, is_preprocessed=False):
     """Transform a document annotated in BRAT format into a sentence based BIO format that also considers relations. 
