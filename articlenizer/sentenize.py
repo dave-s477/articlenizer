@@ -91,7 +91,7 @@ RECOMBINE_REGEX.append( # still more abbreviations
     (re.compile(r'(?P<abbr>\b([Aa]pprox\.|[Nn]o\.|[Ff]igs?\.|[Tt]bls?\.|[Ee]qs?\.))\n(?P<number>\d+)'), r'\g<abbr> \g<number>'))
 RECOMBINE_REGEX.append((re.compile(r'(\.\s*)\n(\s*,)'), r'\1 \2')) # commas
 RECOMBINE_REGEX.append((re.compile(r'\n(?P<t1>\(.{0,250}\))'), r' \g<t1>')) #specific abbreviations
-RECOMBINE_REGEX.append((re.compile(r'\n(?P<t1>\d{1,4}\.)'), r' \g<t1>')) 
+RECOMBINE_REGEX.append((re.compile(r'(?P<t0>\d{1,4}\.?)\n(?P<t1>\d{1,4}\.)'), r'\g<t0> \g<t1>')) 
 RECOMBINE_REGEX.append((re.compile(r'\n(?P<t1>\[[0-9\-,\?]+\])'), r' \g<t1>')) 
 RECOMBINE_REGEX.append((re.compile(r'(?P<t1>\d{1,2}\.)\n(?P<t2>[12]\d{3})'), r'\g<t1> \g<t2>')) 
 
