@@ -280,7 +280,7 @@ def bio_annotate(tokens, entities):
             space_before = False
     return out_tokens, out_names, out_labels
 
-def brat_to_bio(text, annotation, process_unicode=True, replace_math=True, correct=True, corr_cite=True):
+def brat_to_bio(text, annotation, process_unicode=True, replace_math=True, correct=True, corr_cite=True, keep_paragraphs=False):
     """Transform a document annotated in BRAT format into a sentence based BIO format that also considers relations. 
 
     Args:
@@ -320,7 +320,10 @@ def brat_to_bio(text, annotation, process_unicode=True, replace_math=True, corre
     _adjust_strings(annotation_dict, text)
 
     sentences = []
-    sentence_match_objects = re.finditer(r'[^\n]+', text)
+    if keep_paragraphs:
+        sentence_match_objects = re.finditer(r'([^\n]+|\n{2,})', text)
+    else:
+        sentence_match_objects = re.finditer(r'([^\n]+)', text)
     for sentence in sentence_match_objects:
         sentence_string = sentence.group(0)
         sentence_entities = get_sentence_entities(sentence.span(0)[0], sentence.span(0)[1], annotation_dict)
@@ -410,7 +413,7 @@ def sentence_based_info_annotation_dict(text, annotation_dict, process_unicode=T
     
     return sentences
 
-def write_brat_to_bio(file_names, process_unicode=True, replace_math=True, correct=True, corr_cite=True):
+def write_brat_to_bio(file_names, process_unicode=True, replace_math=True, correct=True, corr_cite=True, keep_paragraphs=False):
     """Read a BRAT input file, transform it to BIO format and write separate outputs for text, labels and relations.
 
     Args:
@@ -423,7 +426,7 @@ def write_brat_to_bio(file_names, process_unicode=True, replace_math=True, corre
     with file_names['txt'].open(mode='r') as t_file, file_names['ann'].open(mode='r') as a_file:
         article_text = t_file.read()
         article_annotation = a_file.read()
-        article_sentences = brat_to_bio(article_text, article_annotation, process_unicode=process_unicode, replace_math=replace_math, correct=correct, corr_cite=corr_cite)
+        article_sentences = brat_to_bio(article_text, article_annotation, process_unicode=process_unicode, replace_math=replace_math, correct=correct, corr_cite=corr_cite, keep_paragraphs=keep_paragraphs)
 
         out_text_loc = Path(str(file_names['out']) + '.data.txt') 
         out_label_loc = Path(str(file_names['out']) + '.labels.txt') 
@@ -438,7 +441,7 @@ def write_brat_to_bio(file_names, process_unicode=True, replace_math=True, corre
                     relation_string += '{}\t{}\t{}\t{}\t{}\t{}\t{};;'.format(rel['label'], rel['arg1'], rel['pos1'], rel['ent1'], rel['arg2'], rel['pos2'], rel['ent2'])
                 out_relations.write(relation_string + '\n')
 
-def article_list_brat_to_bio(file_names, process_unicode=True, replace_math=True, correct=True, corr_cite=True):
+def article_list_brat_to_bio(file_names, process_unicode=True, replace_math=True, correct=True, corr_cite=True, keep_paragraphs=False):
     """Read a list of BRAT input files, transform them to BIO format and write separate outputs for text, labels and relations for each file
 
     Args:
@@ -449,9 +452,9 @@ def article_list_brat_to_bio(file_names, process_unicode=True, replace_math=True
         corr_cite (bool, optional): correct citation errors. Defaults to True.
     """
     for f_names in file_names:
-        write_brat_to_bio(f_names, process_unicode=process_unicode, replace_math=replace_math, correct=correct, corr_cite=corr_cite) 
+        write_brat_to_bio(f_names, process_unicode=process_unicode, replace_math=replace_math, correct=correct, corr_cite=corr_cite, keep_paragraphs=keep_paragraphs) 
 
-def brat_to_bio_parallel_wrapper(file_names, n_cores, process_unicode=True, replace_math=True, correct=True, corr_cite=True):
+def brat_to_bio_parallel_wrapper(file_names, n_cores, process_unicode=True, replace_math=True, correct=True, corr_cite=True, keep_paragraphs=False):
     """Parallel wrapper for article_list_brat_to_bio
 
     Args:
@@ -463,7 +466,7 @@ def brat_to_bio_parallel_wrapper(file_names, n_cores, process_unicode=True, repl
         corr_cite (bool, optional): correct citation errors. Defaults to True.
     """
     list_segments = chunk_list(file_names, n_cores)
-    fct_to_execute = partial(article_list_brat_to_bio, process_unicode=process_unicode, replace_math=replace_math, correct=correct, corr_cite=corr_cite)
+    fct_to_execute = partial(article_list_brat_to_bio, process_unicode=process_unicode, replace_math=replace_math, correct=correct, corr_cite=corr_cite, keep_paragraphs=keep_paragraphs)
     with Pool(n_cores) as p:
         p.map(fct_to_execute, list_segments)
 

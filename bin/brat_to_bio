@@ -17,6 +17,7 @@ if __name__ == "__main__":
     parser.add_argument("--replace-math", default=True, type=str2bool, help="Replace math equations with a fixed token")   
     parser.add_argument("--correct", default=True, type=str2bool, help="Correct errors in the text.")
     parser.add_argument("--corr-citations", default=True, type=str2bool, help="Correct citation errors.")
+    parser.add_argument("--keep-paragraphs", default=True, type=str2bool, help="Keep newlines indicating paragraph structure.")
     args = parser.parse_args()
 
     args.in_path = args.in_path.rstrip('/')
@@ -50,9 +51,9 @@ if __name__ == "__main__":
 
     if args.ncores is None:
         print("Transforming {} articles on a single core".format(len(all_files)))
-        formatting.article_list_brat_to_bio(all_files, args.process_unicode, args.replace_math, args.correct, args.corr_citations)
+        formatting.article_list_brat_to_bio(all_files, args.process_unicode, args.replace_math, args.correct, args.corr_citations, args.keep_paragraphs)
     else:
         n_cores = int(args.ncores)
         print("Transforming {} articles on {} cores".format(len(all_files), n_cores))
-        formatting.brat_to_bio_parallel_wrapper(all_files, n_cores, args.process_unicode, args.replace_math, args.correct, args.corr_citations)
+        formatting.brat_to_bio_parallel_wrapper(all_files, n_cores, args.process_unicode, args.replace_math, args.correct, args.corr_citations, args.keep_paragraphs)
  

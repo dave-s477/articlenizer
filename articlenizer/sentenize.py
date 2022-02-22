@@ -12,17 +12,17 @@ from articlenizer import ABBREVIATIONS
 
 # remove leading and trailing spaces for all lines to get rid of potential confusion.
 NORM_REGEX = []
-NORM_REGEX.append((re.compile(r'\n(?P<leading_spaces>\s+)'), '\n'))
+NORM_REGEX.append((re.compile(r'\n(?P<leading_spaces> +)'), '\n'))
 NORM_REGEX.append((re.compile(r'^(?P<leading_spaces> +)'), ''))
 NORM_REGEX.append((re.compile(r'^(?P<leading_newlines>\n+)'), ''))
 NORM_REGEX.append((re.compile(r'(?P<trailing_spaces> +)$'), ''))
 NORM_REGEX.append((re.compile(r'(?P<leading_spaces> +)\n'), '\n'))
 NORM_REGEX.append((re.compile(r'\n(?P<trailing_spaces> +)'), '\n'))
 NORM_REGEX.append((re.compile(r'(?P<multi_spaces>[ \u200a]{2,})'), ' '))
-NORM_REGEX.append((re.compile(r'(?P<multi_newline>\n{2,})'), '\n'))
+NORM_REGEX.append((re.compile(r'(?P<multi_newline>\n{3,})'), '\n\n'))
 
 # regex to split everything there is to split on ".!?" (but not on "Word.Word")
-SPLIT_REGEX = re.compile(r'\S.*?(:?(:?(\.|!|\?|。|！|？)+(?=\s+))|(:?(?=\n+))|(:?(?=\s*$)))')
+SPLIT_REGEX = re.compile(r'\S.*?(:?(:?(\.|!|\?|。|！|？|\n)+(?=\s+))|(:?(?=\n+))|(:?(?=\s*$)))')
 
 # splitter assumes new lines as sentence splits. Here new lines are added between costructions that are likely to indicate new sentences. 
 REFINED_SPLIT_REGEX_KEEP_LENGTH = []
