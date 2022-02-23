@@ -326,7 +326,10 @@ def brat_to_bio(text, annotation, process_unicode=True, replace_math=True, corre
         sentence_match_objects = re.finditer(r'([^\n]+)', text)
     for sentence in sentence_match_objects:
         sentence_string = sentence.group(0)
-        sentence_entities = get_sentence_entities(sentence.span(0)[0], sentence.span(0)[1], annotation_dict)
+        if not sentence_string.strip():
+            sentence_entities = {}
+        else:
+            sentence_entities = get_sentence_entities(sentence.span(0)[0], sentence.span(0)[1], annotation_dict)
         tokens = articlenizer.tokenize_text(sentence_string, 'spaces', False)
         tokens, names, labels = bio_annotate(tokens, sentence_entities)
         sentence_relations = get_sentence_relations(annotation_dict, sentence_entities)
